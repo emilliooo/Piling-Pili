@@ -74,6 +74,13 @@ input,textarea,select{width:100%;padding:10px 12px;border:1.5px solid var(--ink)
 textarea{resize:vertical;min-height:64px}
 .hint{font-size:.76rem;color:var(--ink-soft);margin-top:3px}
 .formacts{display:flex;gap:10px;margin-top:16px}
+.linkrow{display:flex;gap:8px}
+.linkrow input{flex:1}
+.linkrow .btn{white-space:nowrap}
+.toolbtns{display:flex;gap:8px;flex-wrap:wrap}
+.aistatus{font-weight:700;color:var(--verdict-green)}
+.aistatus.err{color:var(--tag-red)}
+.btn[disabled]{opacity:.55;cursor:wait}
 /* login */
 .gate{position:fixed;inset:0;background:var(--wash);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
 .gatebox{background:var(--paper);border:2px solid var(--ink);border-radius:14px;padding:30px;max-width:360px;width:100%;text-align:center}
@@ -135,19 +142,36 @@ textarea{resize:vertical;min-height:64px}
 <section class="pane" id="pane-products">
   <div class="toolbar">
     <div><h2>Products</h2><p class="sub" style="margin:0">Add, edit, or remove what's live on your site.</p></div>
-    <button class="btn red" id="addbtn">+ Add product</button>
+    <div class="toolbtns">
+      <button class="btn red" id="addbtn">+ Add product</button>
+      <button class="btn ghost" id="refreshbtn" title="AI re-checks the current Shopee price of every product">🔄 Refresh prices</button>
+      <button class="btn ghost" id="voucherbtn" title="AI searches for currently running Shopee PH vouchers">🎟️ Voucher check</button>
+      <button class="btn ghost" id="keybtn" title="Set your Anthropic API key (stored only in this browser)">🔑</button>
+    </div>
   </div>
+  <p class="hint aistatus" id="refreshstatus" style="margin:-8px 0 14px"></p>
+  <div class="setupnote" id="voucherbox" style="margin-bottom:16px"></div>
 
   <div class="formcard" id="formcard">
     <h2 style="font-size:1.1rem;margin-bottom:14px" id="formtitle">Add product</h2>
     <div class="formgrid">
+      <div class="full"><label for="f-link">Shopee affiliate link ⚠️</label>
+        <div class="linkrow">
+          <input id="f-link" placeholder="https://s.shopee.ph/xxxx">
+          <button class="btn small" id="autofillbtn" type="button">✨ Auto-fill</button>
+        </div>
+        <p class="hint">Generate in Shopee app → Affiliate dashboard → paste here, then hit Auto-fill. AI searches for the product and pre-fills everything below — <b>always review before saving</b>. (Uses a few centavos of API credit per fill.)</p>
+        <p class="hint aistatus" id="autofillstatus"></p></div>
       <div class="full"><label for="f-name">Product name</label><input id="f-name" placeholder="e.g. Digital Air Fryer 4.5L"></div>
+      <div><label for="f-brand">Brand name</label><input id="f-brand" placeholder="e.g. Gaabor"></div>
       <div><label for="f-category">Category</label><input id="f-category" list="catlist" placeholder="e.g. Kitchen"><datalist id="catlist"></datalist></div>
       <div><label for="f-price">Price (numbers only)</label><input id="f-price" type="number" placeholder="1699"></div>
       <div><label for="f-emoji">Emoji (placeholder image)</label><input id="f-emoji" placeholder="🍟" maxlength="4"></div>
-      <div><label for="f-image">Image URL (optional, overrides emoji)</label><input id="f-image" placeholder="https://..."></div>
-      <div class="full"><label for="f-link">Shopee affiliate link ⚠️</label><input id="f-link" placeholder="https://s.shopee.ph/xxxx">
-        <p class="hint">Generate in Shopee app → Affiliate dashboard → paste here. Double-check before saving!</p></div>
+      <div><label for="f-voucherpct">Voucher % off (optional)</label><input id="f-voucherpct" type="number" placeholder="10" min="0" max="100">
+        <p class="hint">The card will show an estimated with-voucher price.</p></div>
+      <div><label for="f-vouchercap">Voucher cap ₱ (optional)</label><input id="f-vouchercap" type="number" placeholder="150" min="0">
+        <p class="hint">Max discount amount. Leave blank if no cap.</p></div>
+      <div class="full"><label for="f-image">Image URL (optional, overrides emoji)</label><input id="f-image" placeholder="https://..."></div>
       <div><label for="f-pros">Pros (one per line)</label><textarea id="f-pros" placeholder="Fits a whole chicken&#10;Auto shut-off"></textarea></div>
       <div><label for="f-cons">Cons (one per line — required, keep it honest!)</label><textarea id="f-cons" placeholder="Big footprint on the counter"></textarea></div>
       <div class="full"><label for="f-verdict">Real-talk verdict (one sentence, like advice to a friend)</label><textarea id="f-verdict" placeholder="Worth it if you fry 3+ times a week."></textarea></div>
@@ -288,28 +312,44 @@ function renderOverview(){
 }
 
 /* ---- products CRUD ---- */
+function voucherPrice(p){
+  if(!p.voucherPct||!p.price) return null;
+  const disc=Math.min(p.price*p.voucherPct/100, p.voucherCap>0?p.voucherCap:Infinity);
+  return Math.max(0,Math.round(p.price-disc));
+}
+function priceCheckLabel(p){
+  const d=tsToDate(p.priceCheckedAt);
+  if(!d) return "";
+  return (p.priceStatus==="unverified"?"⚠ price unverified, checked ":"price checked ")+ago(d);
+}
 function renderProducts(){
   $('catlist').innerHTML=[...new Set(PRODUCTS.map(p=>p.category))].map(c=>'<option value="'+c+'">').join('');
   $('plist').innerHTML = PRODUCTS.length
-    ? PRODUCTS.map(p=>'<div class="prow"><span class="emoji">'+(p.emoji||"🛍️")+'</span>'+
-        '<div class="info"><div class="nm">'+p.name+(linkLooksBroken(p)?'<span class="badge warn">CHECK LINK</span>':'')+'</div>'+
-        '<div class="meta">'+p.category+' · '+peso(p.price)+' · '+(p.clicks||0)+' clicks</div></div>'+
+    ? PRODUCTS.map(p=>{
+        const vp=voucherPrice(p);
+        const check=priceCheckLabel(p);
+        return '<div class="prow"><span class="emoji">'+(p.emoji||"🛍️")+'</span>'+
+        '<div class="info"><div class="nm">'+p.name+(linkLooksBroken(p)?'<span class="badge warn">CHECK LINK</span>':'')+(p.priceStatus==="unverified"?'<span class="badge warn">PRICE?</span>':'')+'</div>'+
+        '<div class="meta">'+(p.brand?p.brand+' · ':'')+p.category+' · '+peso(p.price)+(vp!==null?' · 🎟️ ~'+peso(vp)+' w/ voucher':'')+' · '+(p.clicks||0)+' clicks'+(check?' · '+check:'')+'</div></div>'+
         '<div class="acts"><button class="btn ghost small" onclick="editP(\''+p.id+'\')">Edit</button>'+
-        '<button class="btn ghost small" onclick="delP(\''+p.id+'\')" style="color:var(--tag-red);border-color:var(--tag-red)">Delete</button></div></div>').join('')
+        '<button class="btn ghost small" onclick="delP(\''+p.id+'\')" style="color:var(--tag-red);border-color:var(--tag-red)">Delete</button></div></div>';
+      }).join('')
     : '<p style="color:var(--ink-soft)">No products yet. Hit “+ Add product” to start.</p>';
 }
 
 $('addbtn').onclick=()=>{ editingId=null; $('formtitle').textContent="Add product"; clearForm(); $('formcard').classList.add('show'); $('f-name').focus(); };
 $('cancelbtn').onclick=()=>$('formcard').classList.remove('show');
 
-function clearForm(){ ["f-name","f-category","f-price","f-emoji","f-image","f-link","f-pros","f-cons","f-verdict"].forEach(id=>$(id).value=""); }
+function clearForm(){ ["f-name","f-brand","f-category","f-price","f-emoji","f-image","f-link","f-pros","f-cons","f-verdict","f-voucherpct","f-vouchercap"].forEach(id=>$(id).value=""); $('autofillstatus').textContent=""; }
 
 window.editP=id=>{
   const p=PRODUCTS.find(x=>x.id===id); if(!p) return;
   editingId=id; $('formtitle').textContent="Edit product";
-  $('f-name').value=p.name||""; $('f-category').value=p.category||""; $('f-price').value=p.price||"";
+  $('f-name').value=p.name||""; $('f-brand').value=p.brand||""; $('f-category').value=p.category||""; $('f-price').value=p.price||"";
   $('f-emoji').value=p.emoji||""; $('f-image').value=p.image||""; $('f-link').value=p.link||"";
+  $('f-voucherpct').value=p.voucherPct||""; $('f-vouchercap').value=p.voucherCap||"";
   $('f-pros').value=(p.pros||[]).join("\n"); $('f-cons').value=(p.cons||[]).join("\n"); $('f-verdict').value=p.verdict||"";
+  $('autofillstatus').textContent="";
   $('formcard').classList.add('show'); $('f-name').focus();
 };
 
@@ -324,8 +364,11 @@ $('savebtn').onclick=async()=>{
   const lines=v=>v.split("\n").map(s=>s.trim()).filter(Boolean);
   const data={
     name:$('f-name').value.trim(),
+    brand:$('f-brand').value.trim(),
     category:$('f-category').value.trim()||"Uncategorized",
     price:Number($('f-price').value)||0,
+    voucherPct:Number($('f-voucherpct').value)||0,
+    voucherCap:Number($('f-vouchercap').value)||0,
     emoji:$('f-emoji').value.trim(),
     image:$('f-image').value.trim(),
     link:$('f-link').value.trim(),
@@ -367,6 +410,153 @@ window.logEarn=async id=>{
     lastEarningAt:firebase.firestore.FieldValue.serverTimestamp()
   });
   load();
+};
+
+/* ============================================================
+   ✨ AI TOOLS — auto-fill, price refresh, voucher check
+   Powered by the Anthropic API. Your API key is stored ONLY in
+   this browser (localStorage) — never in this file or on GitHub.
+   Get a key at console.anthropic.com → API keys.
+   ============================================================ */
+const KEY_STORE="pp_anthropic_key";
+function getKey(){ return localStorage.getItem(KEY_STORE)||""; }
+function askKey(){
+  const cur=getKey();
+  const v=prompt("Paste your Anthropic API key (starts with sk-ant-). Stored only in this browser."+(cur?"\n\nA key is already saved — paste a new one to replace it, or leave blank and press OK to remove it.":""));
+  if(v===null) return false;
+  if(v.trim()==="" && cur){ localStorage.removeItem(KEY_STORE); alert("API key removed from this browser."); return false; }
+  if(!v.trim().startsWith("sk-ant-")){ alert("That doesn't look like an Anthropic key (should start with sk-ant-)."); return false; }
+  localStorage.setItem(KEY_STORE,v.trim());
+  return true;
+}
+function needKey(){
+  if(getKey()) return true;
+  alert("First, set your Anthropic API key (🔑 button). Get one at console.anthropic.com — pay-as-you-go, each AI action costs only a few centavos.");
+  return askKey();
+}
+
+async function aiCall(promptText,maxSearches){
+  const res=await fetch("https://api.anthropic.com/v1/messages",{
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "x-api-key":getKey(),
+      "anthropic-version":"2023-06-01",
+      "anthropic-dangerous-direct-browser-access":"true"
+    },
+    body:JSON.stringify({
+      model:"claude-sonnet-4-6",
+      max_tokens:1500,
+      messages:[{role:"user",content:promptText}],
+      tools:[{type:"web_search_20250305",name:"web_search",max_uses:maxSearches||3}]
+    })
+  });
+  if(!res.ok){
+    let msg="API error "+res.status;
+    try{ const e=await res.json(); msg+=": "+(e.error&&e.error.message||""); }catch(_){}
+    if(res.status===401) msg="Invalid API key — set it again with the 🔑 button.";
+    throw new Error(msg);
+  }
+  const data=await res.json();
+  return data.content.filter(b=>b.type==="text").map(b=>b.text).join("\n");
+}
+function extractJSON(text){
+  const s=text.indexOf("{"), e=text.lastIndexOf("}");
+  if(s<0||e<s) throw new Error("AI reply had no readable data — try again.");
+  return JSON.parse(text.slice(s,e+1));
+}
+
+/* ---- 🔑 key button ---- */
+$('keybtn').onclick=()=>{ if(askKey()) alert("API key saved in this browser ✓"); };
+
+/* ---- ✨ auto-fill from link ---- */
+$('autofillbtn').onclick=async()=>{
+  const link=$('f-link').value.trim();
+  const st=$('autofillstatus');
+  if(!link.startsWith("http")){ st.className="hint aistatus err"; st.textContent="Paste the Shopee link first, then hit Auto-fill."; return; }
+  if(!needKey()) return;
+  const btn=$('autofillbtn'); btn.disabled=true;
+  st.className="hint aistatus"; st.textContent="🔎 Searching for product details… (10–30 sec)";
+  try{
+    const cats=[...new Set(PRODUCTS.map(p=>p.category))].join(", ")||"Kitchen, Home Office, Seller Supplies, Home Comfort";
+    const raw=await aiCall(
+      "You are filling a product entry for an honest Shopee Philippines affiliate comparison site. Product link: "+link+
+      "\nSearch the web to identify this exact product and its current price on Shopee Philippines."+
+      "\nRespond with ONLY a raw JSON object — no markdown, no explanation:"+
+      '\n{"name":"short clear product name","brand":"brand name or empty string","category":"pick from: '+cats+' — or a new short category if none fit","price":number in PHP or null if not confident,"emoji":"one fitting emoji","pros":["2-3 short honest pros"],"cons":["1-2 short honest cons"],"verdict":"one honest friendly sentence, like advice to a friend"}'+
+      '\nBase pros/cons only on real information you found (specs, reviews). Never invent praise. If you cannot identify the product at all, respond {"error":"short reason"}.'
+    );
+    const d=extractJSON(raw);
+    if(d.error) throw new Error("Couldn't identify the product: "+d.error);
+    if(d.name) $('f-name').value=d.name;
+    $('f-brand').value=d.brand||"";
+    if(d.category) $('f-category').value=d.category;
+    if(d.price!==null&&d.price!==undefined&&!isNaN(Number(d.price))) $('f-price').value=Math.round(Number(d.price));
+    if(d.emoji) $('f-emoji').value=d.emoji;
+    $('f-pros').value=(d.pros||[]).join("\n");
+    $('f-cons').value=(d.cons||[]).join("\n");
+    $('f-verdict').value=d.verdict||"";
+    st.textContent="✓ Pre-filled! Now review every field — fix anything off, then Save."+((d.price===null||d.price===undefined)?" (Price not found — enter it manually.)":"");
+  }catch(err){
+    st.className="hint aistatus err";
+    st.textContent="✗ "+err.message;
+  }
+  btn.disabled=false;
+};
+
+/* ---- 🔄 refresh prices ---- */
+$('refreshbtn').onclick=async()=>{
+  if(DEMO){ alert("Connect Firebase first."); return; }
+  const items=PRODUCTS.filter(p=>p.link&&p.link.startsWith("http")&&!p.link.includes("REPLACE"));
+  if(!items.length){ alert("No products with valid links to check."); return; }
+  if(!needKey()) return;
+  if(!confirm("Re-check current Shopee prices for "+items.length+" product(s)? Takes ~15 sec each and uses a few centavos of API credit per product.")) return;
+  const btn=$('refreshbtn'); btn.disabled=true;
+  const st=$('refreshstatus'); st.className="hint aistatus";
+  let updated=0, unverified=0;
+  for(let i=0;i<items.length;i++){
+    const p=items[i];
+    st.textContent="🔄 Checking "+(i+1)+"/"+items.length+": "+p.name+"…";
+    try{
+      const raw=await aiCall(
+        'Search Shopee Philippines for the current price in PHP of this exact product: "'+p.name+'"'+(p.brand?' by '+p.brand:'')+'. Product link: '+p.link+
+        '\nRespond ONLY with raw JSON: {"price": number or null, "confidence": "high" or "low"}.'+
+        '\nprice = the current listed price in PHP on Shopee PH. Use null if you cannot verify it. Only use "high" confidence if you found the actual current listing price.'
+      ,2);
+      const d=extractJSON(raw);
+      const upd={ priceCheckedAt:firebase.firestore.FieldValue.serverTimestamp() };
+      if(d.price!==null&&d.price!==undefined&&!isNaN(Number(d.price))&&d.confidence==="high"){
+        upd.price=Math.round(Number(d.price)); upd.priceStatus="ok";
+        if(upd.price!==p.price) updated++;
+      } else { upd.priceStatus="unverified"; unverified++; }
+      await db.collection('products').doc(p.id).update(upd);
+    }catch(err){
+      unverified++;
+      try{ await db.collection('products').doc(p.id).update({priceCheckedAt:firebase.firestore.FieldValue.serverTimestamp(),priceStatus:"unverified"}); }catch(_){}
+    }
+  }
+  st.textContent="✓ Done — "+updated+" price(s) changed, "+unverified+" couldn't be verified (marked ⚠ for manual check).";
+  btn.disabled=false;
+  load();
+};
+
+/* ---- 🎟️ voucher check ---- */
+$('voucherbtn').onclick=async()=>{
+  if(!needKey()) return;
+  const btn=$('voucherbtn'); btn.disabled=true;
+  const box=$('voucherbox'); box.classList.add('show');
+  box.innerHTML="🎟️ <b>Checking current Shopee PH vouchers…</b> (15–30 sec)";
+  try{
+    const today=new Date().toLocaleDateString('en-PH',{year:'numeric',month:'long',day:'numeric'});
+    const txt=await aiCall(
+      "Today is "+today+". Search for currently active Shopee Philippines platform-wide vouchers, ongoing sale campaigns, or upcoming payday sales. "+
+      "Reply in plain text, max 6 short lines: voucher/campaign name, discount %, cap, and where it applies. Be honest — if you can't find anything reliable and current, say so plainly. No markdown."
+    ,3);
+    box.innerHTML="🎟️ <b>Voucher check ("+today+"):</b><br>"+txt.replace(/\n/g,"<br>")+"<br><span style='color:var(--ink-soft)'>Apply manually: edit a product and fill the voucher % + cap fields. Always verify in the Shopee app first.</span>";
+  }catch(err){
+    box.innerHTML="✗ <b>Voucher check failed:</b> "+err.message;
+  }
+  btn.disabled=false;
 };
 
 load();
