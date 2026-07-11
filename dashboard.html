@@ -146,7 +146,7 @@ textarea{resize:vertical;min-height:64px}
       <button class="btn red" id="addbtn">+ Add product</button>
       <button class="btn ghost" id="refreshbtn" title="AI re-checks the current Shopee price of every product">🔄 Refresh prices</button>
       <button class="btn ghost" id="voucherbtn" title="AI searches for currently running Shopee PH vouchers">🎟️ Voucher check</button>
-      <button class="btn ghost" id="keybtn" title="Set your Anthropic API key (stored only in this browser)">🔑</button>
+      <button class="btn ghost" id="keybtn" title="Set your free Gemini API key (stored only in this browser)">🔑</button>
     </div>
   </div>
   <p class="hint aistatus" id="refreshstatus" style="margin:-8px 0 14px"></p>
@@ -160,7 +160,7 @@ textarea{resize:vertical;min-height:64px}
           <input id="f-link" placeholder="https://s.shopee.ph/xxxx">
           <button class="btn small" id="autofillbtn" type="button">✨ Auto-fill</button>
         </div>
-        <p class="hint">Generate in Shopee app → Affiliate dashboard → paste here, then hit Auto-fill. AI searches for the product and pre-fills everything below — <b>always review before saving</b>. (Uses a few centavos of API credit per fill.)</p>
+        <p class="hint">Generate in Shopee app → Affiliate dashboard → paste here, then hit Auto-fill. AI searches for the product and pre-fills everything below — <b>always review before saving</b>. (Free — uses your Gemini API key.)</p>
         <p class="hint aistatus" id="autofillstatus"></p></div>
       <div class="full"><label for="f-name">Product name</label><input id="f-name" placeholder="e.g. Digital Air Fryer 4.5L"></div>
       <div><label for="f-brand">Brand name</label><input id="f-brand" placeholder="e.g. Gaabor"></div>
@@ -414,51 +414,60 @@ window.logEarn=async id=>{
 
 /* ============================================================
    ✨ AI TOOLS — auto-fill, price refresh, voucher check
-   Powered by the Anthropic API. Your API key is stored ONLY in
-   this browser (localStorage) — never in this file or on GitHub.
-   Get a key at console.anthropic.com → API keys.
+   Powered by the Gemini API FREE tier (with Google Search).
+   Your API key is stored ONLY in this browser (localStorage) —
+   never in this file or on GitHub.
+   Get a free key: aistudio.google.com → Get API key.
    ============================================================ */
-const KEY_STORE="pp_anthropic_key";
+const KEY_STORE="pp_gemini_key";
+const GEMINI_MODELS=["gemini-3.5-flash","gemini-3-flash-preview","gemini-2.5-flash"]; // tries in order
 function getKey(){ return localStorage.getItem(KEY_STORE)||""; }
 function askKey(){
   const cur=getKey();
-  const v=prompt("Paste your Anthropic API key (starts with sk-ant-). Stored only in this browser."+(cur?"\n\nA key is already saved — paste a new one to replace it, or leave blank and press OK to remove it.":""));
+  const v=prompt("Paste your Gemini API key (starts with AIza). Free at aistudio.google.com → Get API key. Stored only in this browser."+(cur?"\n\nA key is already saved — paste a new one to replace it, or leave blank and press OK to remove it.":""));
   if(v===null) return false;
   if(v.trim()==="" && cur){ localStorage.removeItem(KEY_STORE); alert("API key removed from this browser."); return false; }
-  if(!v.trim().startsWith("sk-ant-")){ alert("That doesn't look like an Anthropic key (should start with sk-ant-)."); return false; }
+  if(!v.trim().startsWith("AIza")){ alert("That doesn't look like a Gemini key (should start with AIza)."); return false; }
   localStorage.setItem(KEY_STORE,v.trim());
   return true;
 }
 function needKey(){
   if(getKey()) return true;
-  alert("First, set your Anthropic API key (🔑 button). Get one at console.anthropic.com — pay-as-you-go, each AI action costs only a few centavos.");
+  alert("First, set your free Gemini API key (🔑 button).\n\nGet it at aistudio.google.com → sign in with Google → Get API key → Create API key. No credit card needed.");
   return askKey();
 }
 
-async function aiCall(promptText,maxSearches){
-  const res=await fetch("https://api.anthropic.com/v1/messages",{
-    method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      "x-api-key":getKey(),
-      "anthropic-version":"2023-06-01",
-      "anthropic-dangerous-direct-browser-access":"true"
-    },
-    body:JSON.stringify({
-      model:"claude-sonnet-4-6",
-      max_tokens:1500,
-      messages:[{role:"user",content:promptText}],
-      tools:[{type:"web_search_20250305",name:"web_search",max_uses:maxSearches||3}]
-    })
-  });
-  if(!res.ok){
-    let msg="API error "+res.status;
-    try{ const e=await res.json(); msg+=": "+(e.error&&e.error.message||""); }catch(_){}
-    if(res.status===401) msg="Invalid API key — set it again with the 🔑 button.";
-    throw new Error(msg);
+async function aiCall(promptText){
+  let lastErr=null;
+  for(const model of GEMINI_MODELS){
+    try{
+      const res=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+model+":generateContent?key="+encodeURIComponent(getKey()),{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          contents:[{parts:[{text:promptText}]}],
+          tools:[{google_search:{}}]
+        })
+      });
+      if(res.status===404){ lastErr=new Error(model+" unavailable"); continue; } // model retired → try next
+      if(res.status===429){ throw new Error("Free-tier limit reached for now — wait a minute (or come back tomorrow) and try again."); }
+      if(!res.ok){
+        let msg="API error "+res.status;
+        try{ const e=await res.json(); msg+=": "+(e.error&&e.error.message||""); }catch(_){}
+        if(res.status===400&&msg.toLowerCase().includes("key")) msg="Invalid API key — set it again with the 🔑 button.";
+        throw new Error(msg);
+      }
+      const data=await res.json();
+      const parts=((data.candidates||[])[0]||{}).content;
+      const txt=(parts&&parts.parts||[]).filter(p=>p.text).map(p=>p.text).join("\n");
+      if(!txt) throw new Error("Empty AI reply — try again.");
+      return txt;
+    }catch(err){
+      if(String(err.message).includes("unavailable")){ lastErr=err; continue; }
+      throw err;
+    }
   }
-  const data=await res.json();
-  return data.content.filter(b=>b.type==="text").map(b=>b.text).join("\n");
+  throw lastErr||new Error("No Gemini model responded.");
 }
 function extractJSON(text){
   const s=text.indexOf("{"), e=text.lastIndexOf("}");
@@ -510,7 +519,7 @@ $('refreshbtn').onclick=async()=>{
   const items=PRODUCTS.filter(p=>p.link&&p.link.startsWith("http")&&!p.link.includes("REPLACE"));
   if(!items.length){ alert("No products with valid links to check."); return; }
   if(!needKey()) return;
-  if(!confirm("Re-check current Shopee prices for "+items.length+" product(s)? Takes ~15 sec each and uses a few centavos of API credit per product.")) return;
+  if(!confirm("Re-check current Shopee prices for "+items.length+" product(s)? Takes ~15 sec each (free on the Gemini tier — checks run one by one to respect rate limits).")) return;
   const btn=$('refreshbtn'); btn.disabled=true;
   const st=$('refreshstatus'); st.className="hint aistatus";
   let updated=0, unverified=0;
@@ -522,7 +531,7 @@ $('refreshbtn').onclick=async()=>{
         'Search Shopee Philippines for the current price in PHP of this exact product: "'+p.name+'"'+(p.brand?' by '+p.brand:'')+'. Product link: '+p.link+
         '\nRespond ONLY with raw JSON: {"price": number or null, "confidence": "high" or "low"}.'+
         '\nprice = the current listed price in PHP on Shopee PH. Use null if you cannot verify it. Only use "high" confidence if you found the actual current listing price.'
-      ,2);
+      );
       const d=extractJSON(raw);
       const upd={ priceCheckedAt:firebase.firestore.FieldValue.serverTimestamp() };
       if(d.price!==null&&d.price!==undefined&&!isNaN(Number(d.price))&&d.confidence==="high"){
@@ -530,6 +539,7 @@ $('refreshbtn').onclick=async()=>{
         if(upd.price!==p.price) updated++;
       } else { upd.priceStatus="unverified"; unverified++; }
       await db.collection('products').doc(p.id).update(upd);
+      if(i<items.length-1) await new Promise(r=>setTimeout(r,7000)); // pace for free-tier rate limits
     }catch(err){
       unverified++;
       try{ await db.collection('products').doc(p.id).update({priceCheckedAt:firebase.firestore.FieldValue.serverTimestamp(),priceStatus:"unverified"}); }catch(_){}
@@ -551,7 +561,7 @@ $('voucherbtn').onclick=async()=>{
     const txt=await aiCall(
       "Today is "+today+". Search for currently active Shopee Philippines platform-wide vouchers, ongoing sale campaigns, or upcoming payday sales. "+
       "Reply in plain text, max 6 short lines: voucher/campaign name, discount %, cap, and where it applies. Be honest — if you can't find anything reliable and current, say so plainly. No markdown."
-    ,3);
+    );
     box.innerHTML="🎟️ <b>Voucher check ("+today+"):</b><br>"+txt.replace(/\n/g,"<br>")+"<br><span style='color:var(--ink-soft)'>Apply manually: edit a product and fill the voucher % + cap fields. Always verify in the Shopee app first.</span>";
   }catch(err){
     box.innerHTML="✗ <b>Voucher check failed:</b> "+err.message;
