@@ -424,11 +424,12 @@ const GEMINI_MODELS=["gemini-3.5-flash","gemini-3-flash-preview","gemini-2.5-fla
 function getKey(){ return localStorage.getItem(KEY_STORE)||""; }
 function askKey(){
   const cur=getKey();
-  const v=prompt("Paste your Gemini API key (starts with AIza). Free at aistudio.google.com → Get API key. Stored only in this browser."+(cur?"\n\nA key is already saved — paste a new one to replace it, or leave blank and press OK to remove it.":""));
+  const v=prompt("Paste your Gemini API key (starts with AQ. or AIza). Free at aistudio.google.com → Get API key. Stored only in this browser."+(cur?"\n\nA key is already saved — paste a new one to replace it, or leave blank and press OK to remove it.":""));
   if(v===null) return false;
   if(v.trim()==="" && cur){ localStorage.removeItem(KEY_STORE); alert("API key removed from this browser."); return false; }
-  if(!v.trim().startsWith("AIza")){ alert("That doesn't look like a Gemini key (should start with AIza)."); return false; }
-  localStorage.setItem(KEY_STORE,v.trim());
+  const k=v.trim();
+  if(!k.startsWith("AIza")&&!k.startsWith("AQ.")){ alert("That doesn't look like a Gemini key (should start with AQ. or AIza)."); return false; }
+  localStorage.setItem(KEY_STORE,k);
   return true;
 }
 function needKey(){
