@@ -55,6 +55,8 @@ select{padding:12px;border:2px solid var(--ink);border-radius:var(--radius);back
 .pname{font-family:var(--font-display);font-weight:700;font-size:1.02rem;line-height:1.25}
 .pricetag{align-self:flex-start;background:var(--tag-red);color:#fff;font-weight:700;font-size:1.05rem;padding:3px 12px;border-radius:4px;position:relative}
 .pricetag::after{content:"";position:absolute;right:-7px;top:50%;transform:translateY(-50%) rotate(45deg);width:14px;height:14px;background:var(--tag-red);border-radius:2px;z-index:-1}
+.voucherline{font-size:.84rem;font-weight:700;color:var(--verdict-green)}
+.checked{font-size:.72rem;color:var(--ink-soft)}
 .proscons{font-size:.85rem;display:flex;flex-direction:column;gap:3px}
 .proscons .pro::before{content:"✓ ";color:var(--verdict-green);font-weight:700}
 .proscons .con::before{content:"✗ ";color:var(--tag-red);font-weight:700}
@@ -166,11 +168,11 @@ const SAMPLE_PRODUCTS = [
    pros:["Crushes ice with no drama","Easy to clean, detachable blade"], cons:["Loud at max speed"],
    verdict:"Solid for daily smoothies. Just don't expect it to handle super thick blends.",
    link:"https://s.shopee.ph/REPLACE-ME-1"},
-  {id:"s2", name:"Digital Air Fryer 4.5L", category:"Kitchen", price:1699, emoji:"🍟",
+  {id:"s2", name:"Digital Air Fryer 4.5L", brand:"Gaabor", category:"Kitchen", voucherPct:10, voucherCap:150, price:1699, emoji:"🍟",
    pros:["Fits a whole chicken","Auto shut-off, safe to leave"], cons:["Big footprint on the counter","Basket coating starts peeling after ~1yr of heavy use"],
    verdict:"Worth it if you fry 3+ times a week. If it's just occasional, get the smaller one.",
    link:"https://s.shopee.ph/REPLACE-ME-2"},
-  {id:"s3", name:"Thermal Printer A6 (Bluetooth)", category:"Seller Supplies", price:1250, emoji:"🖨️",
+  {id:"s3", name:"Thermal Printer A6 (Bluetooth)", brand:"Phomemo", category:"Seller Supplies", price:1250, emoji:"🖨️",
    pros:["No ink ever — thermal paper only","Fast from both phone and laptop"], cons:["Thermal prints fade after months (fine for waybills)"],
    verdict:"If you ship 10+ orders a week, this pays for itself in saved time. Packing game changer.",
    link:"https://s.shopee.ph/REPLACE-ME-3"},
@@ -212,6 +214,18 @@ let PRODUCTS=[], activeCat="All", selected=new Set();
 const seenThisSession=new Set(); // for counting a product view once per visit
 
 function peso(n){return "₱"+Number(n).toLocaleString('en-PH');}
+function voucherPrice(p){
+  if(!p.voucherPct||!p.price) return null;
+  const disc=Math.min(p.price*p.voucherPct/100, p.voucherCap>0?p.voucherCap:Infinity);
+  return Math.max(0,Math.round(p.price-disc));
+}
+function checkedLabel(p){
+  if(p.priceStatus!=="ok"||!p.priceCheckedAt||!p.priceCheckedAt.toDate) return "";
+  const days=Math.floor((Date.now()-p.priceCheckedAt.toDate().getTime())/86400000);
+  if(days>14) return "";
+  const when=days===0?"today":days===1?"yesterday":days+" days ago";
+  return "Price checked "+when;
+}
 
 /* ---- tracking helpers (silently do nothing in demo mode) ---- */
 function track(id, field){
@@ -256,7 +270,7 @@ function currentList(){
   let list=PRODUCTS.slice();
   if(activeCat!=="All") list=list.filter(p=>p.category===activeCat);
   const q=searchEl.value.trim().toLowerCase();
-  if(q) list=list.filter(p=>p.name.toLowerCase().includes(q)||p.category.toLowerCase().includes(q)||(p.verdict||"").toLowerCase().includes(q));
+  if(q) list=list.filter(p=>p.name.toLowerCase().includes(q)||p.category.toLowerCase().includes(q)||(p.brand||"").toLowerCase().includes(q)||(p.verdict||"").toLowerCase().includes(q));
   if(sortEl.value==="price-asc") list.sort((a,b)=>a.price-b.price);
   if(sortEl.value==="price-desc") list.sort((a,b)=>b.price-a.price);
   return list;
@@ -274,12 +288,16 @@ function render(){
     const card=document.createElement('article');
     card.className='card'; card.dataset.id=p.id;
     const img=p.image?'<img src="'+p.image+'" alt="'+p.name+'" loading="lazy">':'<span class="emoji" aria-hidden="true">'+(p.emoji||"🛍️")+'</span>';
+    const vp=voucherPrice(p);
+    const checked=checkedLabel(p);
     card.innerHTML=
       '<div class="cardimg">'+img+'</div>'+
       '<div class="cardbody">'+
-        '<span class="cat">'+p.category+'</span>'+
+        '<span class="cat">'+p.category+(p.brand?' · '+p.brand:'')+'</span>'+
         '<h3 class="pname">'+p.name+'</h3>'+
         '<span class="pricetag">'+peso(p.price)+'</span>'+
+        (vp!==null?'<span class="voucherline">🎟️ ~'+peso(vp)+' with '+p.voucherPct+'% voucher'+(p.voucherCap>0?' (cap '+peso(p.voucherCap)+')':'')+'</span>':'')+
+        (checked?'<span class="checked">✓ '+checked+'</span>':'')+
         '<div class="proscons">'+
           (p.pros||[]).map(x=>'<span class="pro">'+x+'</span>').join('')+
           (p.cons||[]).map(x=>'<span class="con">'+x+'</span>').join('')+
@@ -327,7 +345,11 @@ compareBtn.onclick=()=>{
   const row=(label,cells)=>'<tr><td class="rowlabel">'+label+'</td>'+cells.map(c=>'<td>'+c+'</td>').join('')+'</tr>';
   cmpTable.innerHTML='<table>'+
     '<tr><th class="rowlabel"></th>'+items.map(p=>'<th>'+p.name+'</th>').join('')+'</tr>'+
-    row("Price",items.map(p=>'<span class="pricetag">'+peso(p.price)+'</span>'))+
+    row("Brand",items.map(p=>p.brand||'—'))+
+    row("Price",items.map(p=>{
+      const vp=voucherPrice(p);
+      return '<span class="pricetag">'+peso(p.price)+'</span>'+(vp!==null?'<br><span class="voucherline">🎟️ ~'+peso(vp)+' w/ voucher</span>':'');
+    }))+
     row("Pros",items.map(p=>(p.pros||[]).map(x=>"✓ "+x).join("<br>")))+
     row("Cons",items.map(p=>(p.cons||[]).map(x=>"✗ "+x).join("<br>")))+
     row("Verdict",items.map(p=>'<em>'+(p.verdict||"")+'</em>'))+
