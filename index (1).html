@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Piling-Pili — Honest Picks, Compared</title>
+<meta name="description" content="Curated and compared Shopee finds. Honest pros and cons, no hype.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,700;12..96,800&family=Karla:wght@400;500;700&family=Caveat:wght@600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#17253B; --ink-soft:#4A5A72; --paper:#FFFFFF; --wash:#F3F5F8;
+  --tag-red:#E63946; --verdict-green:#1F7A5A; --kraft:#EFE6D4; --kraft-line:#D9CBAE;
+  --line:#DDE3EB; --radius:10px;
+  --font-display:'Bricolage Grotesque',sans-serif; --font-body:'Karla',sans-serif; --font-note:'Caveat',cursive;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+body{font-family:var(--font-body);color:var(--ink);background:var(--paper);line-height:1.55}
+button{font-family:inherit;cursor:pointer}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--tag-red);outline-offset:2px}
+header{border-bottom:2px solid var(--ink);padding:18px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{font-family:var(--font-display);font-weight:800;font-size:1.35rem;letter-spacing:-.02em;display:flex;align-items:center;gap:10px}
+.brand .tagdot{width:14px;height:14px;background:var(--tag-red);border-radius:50%;border:2px solid var(--ink);display:inline-block}
+.disclosure{font-size:.78rem;color:var(--ink-soft);max-width:420px}
+.disclosure strong{color:var(--ink)}
+.demobanner{background:var(--kraft);border-bottom:1.5px dashed var(--kraft-line);padding:8px 20px;font-size:.82rem;text-align:center;color:var(--ink-soft);display:none}
+.demobanner.show{display:block}
+.hero{padding:46px 20px 34px;max-width:1080px;margin:0 auto}
+.hero h1{font-family:var(--font-display);font-weight:800;font-size:clamp(2rem,5.5vw,3.4rem);line-height:1.04;letter-spacing:-.03em;max-width:18ch}
+.hero h1 .underline{box-shadow:inset 0 -0.28em 0 rgba(230,57,70,.28)}
+.hero p{margin-top:14px;color:var(--ink-soft);max-width:56ch;font-size:1.02rem}
+.hero .note{font-family:var(--font-note);font-size:1.35rem;color:var(--verdict-green);margin-top:10px;transform:rotate(-1.2deg);display:inline-block}
+.controls{max-width:1080px;margin:0 auto;padding:0 20px 8px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.searchwrap{flex:1 1 260px;position:relative}
+.searchwrap input{width:100%;padding:12px 14px 12px 40px;border:2px solid var(--ink);border-radius:var(--radius);font-size:1rem;font-family:inherit;background:var(--paper)}
+.searchwrap svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:18px;height:18px;stroke:var(--ink-soft)}
+select{padding:12px;border:2px solid var(--ink);border-radius:var(--radius);background:var(--paper);font-size:.95rem;font-family:inherit;color:var(--ink)}
+.chiprow{max-width:1080px;margin:0 auto;padding:8px 20px 4px;display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1.5px solid var(--ink);background:var(--paper);border-radius:999px;padding:7px 16px;font-size:.87rem;font-weight:700;transition:background .15s}
+.chip[aria-pressed="true"]{background:var(--ink);color:#fff}
+.count{max-width:1080px;margin:0 auto;padding:6px 20px 0;font-size:.85rem;color:var(--ink-soft)}
+.grid{max-width:1080px;margin:0 auto;padding:18px 20px 90px;display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:22px}
+.card{border:2px solid var(--ink);border-radius:var(--radius);background:var(--paper);position:relative;display:flex;flex-direction:column;overflow:visible;transition:transform .15s ease,box-shadow .15s ease}
+.card:hover{transform:translateY(-3px);box-shadow:6px 6px 0 rgba(23,37,59,.12)}
+.card::before{content:"";position:absolute;top:-9px;left:50%;transform:translateX(-50%);width:16px;height:16px;background:var(--paper);border:2px solid var(--ink);border-radius:50%;z-index:2}
+.cardimg{height:150px;background:var(--wash);border-bottom:2px solid var(--ink);border-radius:8px 8px 0 0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.cardimg img{width:100%;height:100%;object-fit:cover}
+.cardimg .emoji{font-size:3rem}
+.cardbody{padding:14px 16px 16px;display:flex;flex-direction:column;gap:9px;flex:1}
+.cat{font-size:.7rem;letter-spacing:.09em;text-transform:uppercase;font-weight:700;color:var(--ink-soft)}
+.pname{font-family:var(--font-display);font-weight:700;font-size:1.02rem;line-height:1.25}
+.pricetag{align-self:flex-start;background:var(--tag-red);color:#fff;font-weight:700;font-size:1.05rem;padding:3px 12px;border-radius:4px;position:relative}
+.pricetag::after{content:"";position:absolute;right:-7px;top:50%;transform:translateY(-50%) rotate(45deg);width:14px;height:14px;background:var(--tag-red);border-radius:2px;z-index:-1}
+.proscons{font-size:.85rem;display:flex;flex-direction:column;gap:3px}
+.proscons .pro::before{content:"✓ ";color:var(--verdict-green);font-weight:700}
+.proscons .con::before{content:"✗ ";color:var(--tag-red);font-weight:700}
+.proscons .con{color:var(--ink-soft)}
+.verdict{font-family:var(--font-note);font-size:1.18rem;color:var(--verdict-green);background:var(--kraft);border:1.5px dashed var(--kraft-line);border-radius:8px;padding:7px 12px;transform:rotate(-.6deg)}
+.verdict b{font-weight:600}
+.cardfoot{margin-top:auto;display:flex;gap:8px;align-items:center;padding-top:4px}
+.buy{flex:1;text-align:center;background:var(--ink);color:#fff;text-decoration:none;font-weight:700;padding:11px 10px;border-radius:8px;font-size:.92rem;transition:background .15s}
+.buy:hover{background:#0D1830}
+.cmp{display:flex;align-items:center;gap:6px;font-size:.8rem;font-weight:700;color:var(--ink-soft);user-select:none}
+.cmp input{width:17px;height:17px;accent-color:var(--tag-red)}
+.comparebar{position:fixed;bottom:0;left:0;right:0;background:var(--ink);color:#fff;padding:12px 20px;display:none;align-items:center;justify-content:center;gap:14px;z-index:50;flex-wrap:wrap}
+.comparebar.show{display:flex}
+.comparebar .names{font-size:.9rem;opacity:.85}
+.comparebar button{background:var(--tag-red);color:#fff;border:none;border-radius:8px;font-weight:700;padding:10px 22px;font-size:.95rem}
+.comparebar .clear{background:transparent;border:1.5px solid rgba(255,255,255,.5);font-weight:500}
+.modal{position:fixed;inset:0;background:rgba(13,24,48,.55);display:none;align-items:flex-start;justify-content:center;padding:30px 14px;z-index:60;overflow:auto}
+.modal.show{display:flex}
+.sheet{background:var(--paper);border:2px solid var(--ink);border-radius:14px;max-width:900px;width:100%;padding:24px}
+.sheet h2{font-family:var(--font-display);font-weight:800;letter-spacing:-.02em;margin-bottom:4px}
+.sheet .sub{color:var(--ink-soft);font-size:.9rem;margin-bottom:16px}
+.cmptablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+th,td{border:1.5px solid var(--line);padding:10px 12px;text-align:left;vertical-align:top;min-width:150px}
+th{background:var(--wash);font-family:var(--font-display);font-size:.95rem}
+td.rowlabel,th.rowlabel{min-width:96px;font-weight:700;background:var(--wash);font-family:var(--font-body);font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft)}
+td .pricetag{font-size:.95rem}
+td a.buy{display:block;margin-top:2px}
+.closebtn{margin-top:18px;background:var(--paper);border:2px solid var(--ink);border-radius:8px;padding:10px 22px;font-weight:700}
+.empty{grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--ink-soft)}
+.empty .big{font-family:var(--font-note);font-size:1.8rem;color:var(--ink);margin-bottom:6px}
+footer{border-top:2px solid var(--ink);padding:26px 20px;text-align:center;font-size:.82rem;color:var(--ink-soft)}
+@media(max-width:520px){header{padding:14px 16px}.disclosure{font-size:.72rem}.hero{padding:30px 16px 22px}}
+</style>
+</head>
+<body>
+
+<div class="demobanner" id="demobanner">Demo mode — showing sample products. Connect Firebase (see setup notes in the code) to manage products from your dashboard.</div>
+
+<header>
+  <div class="brand"><span class="tagdot"></span>Piling-Pili</div>
+  <p class="disclosure"><strong>Honesty first:</strong> the "Buy on Shopee" buttons are affiliate links. You pay the same price — I just earn a small commission if you buy. Thanks for the support! 🧡</p>
+</header>
+
+<section class="hero">
+  <h1>I compared them, <span class="underline">so you don't get fooled.</span></h1>
+  <p>Hand-picked Shopee finds, reviewed one by one — price, pros, cons, and a real verdict. Search, compare side by side, and buy only if it's truly worth it for you.</p>
+  <span class="note">— real opinions, zero hype ✍️</span>
+</section>
+
+<div class="controls">
+  <div class="searchwrap">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+    <input id="search" type="search" placeholder="Search… (e.g. blender, fan, printer)" aria-label="Search products">
+  </div>
+  <select id="sort" aria-label="Sort products">
+    <option value="default">Sort: Curated order</option>
+    <option value="price-asc">Price: Low → High</option>
+    <option value="price-desc">Price: High → Low</option>
+  </select>
+</div>
+
+<div class="chiprow" id="chips" role="group" aria-label="Filter by category"></div>
+<div class="count" id="count"></div>
+
+<main class="grid" id="grid"></main>
+
+<div class="comparebar" id="comparebar">
+  <span class="names" id="comparenames"></span>
+  <button id="comparebtn">Compare (0)</button>
+  <button class="clear" id="clearbtn">Clear</button>
+</div>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="cmp-title">
+  <div class="sheet">
+    <h2 id="cmp-title">Side-by-side</h2>
+    <p class="sub">Here are your picks, side by side, so deciding is easy.</p>
+    <div class="cmptablewrap" id="cmptable"></div>
+    <button class="closebtn" id="closebtn">Close</button>
+  </div>
+</div>
+
+<footer>Piling-Pili · Curated with honesty · Affiliate-supported, always disclosed.</footer>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+/* ============================================================
+   ⚙️ SETUP — paste your Firebase config here (SAME config
+   goes in dashboard.html). Get it from:
+   Firebase Console → Project settings → Your apps → Web app
+   ------------------------------------------------------------
+   Until you paste it, the site runs in DEMO MODE with the
+   sample products below, and no stats are tracked.
+   ============================================================ */
+const firebaseConfig = {
+  apiKey: "PASTE-YOUR-API-KEY",
+  authDomain: "PASTE.firebaseapp.com",
+  projectId: "PASTE-PROJECT-ID",
+  storageBucket: "PASTE.appspot.com",
+  messagingSenderId: "PASTE",
+  appId: "PASTE"
+};
+
+/* Sample products — shown only in demo mode. Once Firebase is
+   connected, products come from your dashboard instead. */
+const SAMPLE_PRODUCTS = [
+  {id:"s1", name:"Multifunction Blender 1.5L (350W)", category:"Kitchen", price:899, emoji:"🥤",
+   pros:["Crushes ice with no drama","Easy to clean, detachable blade"], cons:["Loud at max speed"],
+   verdict:"Solid for daily smoothies. Just don't expect it to handle super thick blends.",
+   link:"https://s.shopee.ph/REPLACE-ME-1"},
+  {id:"s2", name:"Digital Air Fryer 4.5L", category:"Kitchen", price:1699, emoji:"🍟",
+   pros:["Fits a whole chicken","Auto shut-off, safe to leave"], cons:["Big footprint on the counter","Basket coating starts peeling after ~1yr of heavy use"],
+   verdict:"Worth it if you fry 3+ times a week. If it's just occasional, get the smaller one.",
+   link:"https://s.shopee.ph/REPLACE-ME-2"},
+  {id:"s3", name:"Thermal Printer A6 (Bluetooth)", category:"Seller Supplies", price:1250, emoji:"🖨️",
+   pros:["No ink ever — thermal paper only","Fast from both phone and laptop"], cons:["Thermal prints fade after months (fine for waybills)"],
+   verdict:"If you ship 10+ orders a week, this pays for itself in saved time. Packing game changer.",
+   link:"https://s.shopee.ph/REPLACE-ME-3"},
+  {id:"s4", name:"Bubble Wrap Roll 20in x 100m", category:"Seller Supplies", price:585, emoji:"📦",
+   pros:["Cheapest per-meter I've tried","Thick, doesn't pop easily"], cons:["Bulky delivery — prepare storage space"],
+   verdict:"Bulk buying = real savings. If you sell fragile items, this is the one.",
+   link:"https://s.shopee.ph/REPLACE-ME-4"},
+  {id:"s5", name:"Ergonomic Mesh Office Chair", category:"Home Office", price:3499, emoji:"🪑",
+   pros:["Adjustable lumbar support","Mesh back stays cool"], cons:["Armrests not adjustable","~30 min assembly, manual is tricky"],
+   verdict:"8-hour WFH days? This is an investment in your back — cheaper than monthly massages.",
+   link:"https://s.shopee.ph/REPLACE-ME-5"},
+  {id:"s6", name:"Laptop Stand Aluminum (Foldable)", category:"Home Office", price:449, emoji:"💻",
+   pros:["Raises screen to eye level","Sturdy even with a 15.6\" laptop"], cons:["Slight wobble if you type heavily"],
+   verdict:"The cheapest fix for a stiff neck. Pair it with an external keyboard.",
+   link:"https://s.shopee.ph/REPLACE-ME-6"},
+  {id:"s7", name:"Rechargeable Desk Fan (USB-C)", category:"Home Comfort", price:699, emoji:"🌬️",
+   pros:["6–8 hrs battery on mid speed","Quiet — fine during meetings"], cons:["Personal fan only, won't cool a room"],
+   verdict:"Brownout buddy. Pointed straight at you, it absolutely earns its price.",
+   link:"https://s.shopee.ph/REPLACE-ME-7"},
+  {id:"s8", name:"Blackout Curtains 2pcs (140x220cm)", category:"Home Comfort", price:549, emoji:"🌙",
+   pros:["Genuinely darkens the room","Noticeably cooler — saves on aircon"], cons:["You'll need your own curtain rod"],
+   verdict:"Night shift or afternoon naps? This level of darkness is life-changing.",
+   link:"https://s.shopee.ph/REPLACE-ME-8"}
+];
+
+/* ================= app code below — no need to edit ================= */
+const DEMO = firebaseConfig.apiKey === "PASTE-YOUR-API-KEY";
+let db = null;
+if(!DEMO){ firebase.initializeApp(firebaseConfig); db = firebase.firestore(); }
+
+const grid=document.getElementById('grid'),chipsEl=document.getElementById('chips'),
+searchEl=document.getElementById('search'),sortEl=document.getElementById('sort'),
+countEl=document.getElementById('count'),bar=document.getElementById('comparebar'),
+namesEl=document.getElementById('comparenames'),compareBtn=document.getElementById('comparebtn'),
+clearBtn=document.getElementById('clearbtn'),modal=document.getElementById('modal'),
+cmpTable=document.getElementById('cmptable'),closeBtn=document.getElementById('closebtn');
+
+let PRODUCTS=[], activeCat="All", selected=new Set();
+const seenThisSession=new Set(); // for counting a product view once per visit
+
+function peso(n){return "₱"+Number(n).toLocaleString('en-PH');}
+
+/* ---- tracking helpers (silently do nothing in demo mode) ---- */
+function track(id, field){
+  if(DEMO||!db||!id) return;
+  const upd={}; upd[field]=firebase.firestore.FieldValue.increment(1);
+  if(field==="clicks") upd.lastClickAt=firebase.firestore.FieldValue.serverTimestamp();
+  db.collection('products').doc(id).update(upd).catch(()=>{});
+}
+function trackVisit(){
+  if(DEMO||!db) return;
+  db.collection('meta').doc('site').set(
+    {visits:firebase.firestore.FieldValue.increment(1),
+     lastVisitAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true}).catch(()=>{});
+}
+
+/* count a "view" when a card actually appears on screen */
+const observer = new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      const id=e.target.dataset.id;
+      if(id && !seenThisSession.has(id)){ seenThisSession.add(id); track(id,"views"); }
+      observer.unobserve(e.target);
+    }
+  });
+},{threshold:.5});
+
+function buildChips(){
+  chipsEl.innerHTML="";
+  const cats=["All",...new Set(PRODUCTS.map(p=>p.category))];
+  cats.forEach(cat=>{
+    const b=document.createElement('button');
+    b.className='chip'; b.textContent=cat;
+    b.setAttribute('aria-pressed',cat===activeCat);
+    b.onclick=()=>{activeCat=cat;
+      document.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed',c.textContent===cat));
+      render();};
+    chipsEl.appendChild(b);
+  });
+}
+
+function currentList(){
+  let list=PRODUCTS.slice();
+  if(activeCat!=="All") list=list.filter(p=>p.category===activeCat);
+  const q=searchEl.value.trim().toLowerCase();
+  if(q) list=list.filter(p=>p.name.toLowerCase().includes(q)||p.category.toLowerCase().includes(q)||(p.verdict||"").toLowerCase().includes(q));
+  if(sortEl.value==="price-asc") list.sort((a,b)=>a.price-b.price);
+  if(sortEl.value==="price-desc") list.sort((a,b)=>b.price-a.price);
+  return list;
+}
+
+function render(){
+  const list=currentList();
+  countEl.textContent=list.length+" item"+(list.length===1?"":"s")+(activeCat!=="All"?" in "+activeCat:"");
+  grid.innerHTML="";
+  if(!list.length){
+    grid.innerHTML='<div class="empty"><div class="big">No matches 🤔</div>Try another keyword or clear the filter.</div>';
+    return;
+  }
+  list.forEach(p=>{
+    const card=document.createElement('article');
+    card.className='card'; card.dataset.id=p.id;
+    const img=p.image?'<img src="'+p.image+'" alt="'+p.name+'" loading="lazy">':'<span class="emoji" aria-hidden="true">'+(p.emoji||"🛍️")+'</span>';
+    card.innerHTML=
+      '<div class="cardimg">'+img+'</div>'+
+      '<div class="cardbody">'+
+        '<span class="cat">'+p.category+'</span>'+
+        '<h3 class="pname">'+p.name+'</h3>'+
+        '<span class="pricetag">'+peso(p.price)+'</span>'+
+        '<div class="proscons">'+
+          (p.pros||[]).map(x=>'<span class="pro">'+x+'</span>').join('')+
+          (p.cons||[]).map(x=>'<span class="con">'+x+'</span>').join('')+
+        '</div>'+
+        '<p class="verdict"><b>Real talk:</b> '+(p.verdict||"")+'</p>'+
+        '<div class="cardfoot">'+
+          '<a class="buy" href="'+p.link+'" target="_blank" rel="noopener sponsored" data-id="'+p.id+'">Buy on Shopee ↗</a>'+
+          '<label class="cmp"><input type="checkbox" data-id="'+p.id+'" '+(selected.has(p.id)?'checked':'')+' aria-label="Add '+p.name+' to compare">vs</label>'+
+        '</div>'+
+      '</div>';
+    grid.appendChild(card);
+    observer.observe(card);
+  });
+  grid.querySelectorAll('a.buy').forEach(a=>{
+    a.addEventListener('click',()=>track(a.dataset.id,"clicks"));
+  });
+  grid.querySelectorAll('.cmp input').forEach(cb=>{
+    cb.onchange=()=>{
+      const id=cb.dataset.id;
+      if(cb.checked){
+        if(selected.size>=3){cb.checked=false;alert("You can compare up to 3 products at a time.");return;}
+        selected.add(id);
+      } else selected.delete(id);
+      updateBar();
+    };
+  });
+}
+
+function byId(id){return PRODUCTS.find(p=>p.id===id);}
+
+function updateBar(){
+  if(selected.size>=1){
+    bar.classList.add('show');
+    namesEl.textContent=[...selected].map(id=>byId(id).name.split(" ").slice(0,3).join(" ")).join("  •  ");
+    compareBtn.textContent="Compare ("+selected.size+")";
+    compareBtn.disabled=selected.size<2;
+    compareBtn.style.opacity=selected.size<2?.5:1;
+  } else bar.classList.remove('show');
+}
+
+compareBtn.onclick=()=>{
+  if(selected.size<2) return;
+  const items=[...selected].map(byId);
+  items.forEach(p=>track(p.id,"compares"));
+  const row=(label,cells)=>'<tr><td class="rowlabel">'+label+'</td>'+cells.map(c=>'<td>'+c+'</td>').join('')+'</tr>';
+  cmpTable.innerHTML='<table>'+
+    '<tr><th class="rowlabel"></th>'+items.map(p=>'<th>'+p.name+'</th>').join('')+'</tr>'+
+    row("Price",items.map(p=>'<span class="pricetag">'+peso(p.price)+'</span>'))+
+    row("Pros",items.map(p=>(p.pros||[]).map(x=>"✓ "+x).join("<br>")))+
+    row("Cons",items.map(p=>(p.cons||[]).map(x=>"✗ "+x).join("<br>")))+
+    row("Verdict",items.map(p=>'<em>'+(p.verdict||"")+'</em>'))+
+    row("",items.map(p=>'<a class="buy" href="'+p.link+'" target="_blank" rel="noopener sponsored" onclick="track(\''+p.id+'\',\'clicks\')">Buy on Shopee ↗</a>'))+
+    '</table>';
+  modal.classList.add('show');
+  closeBtn.focus();
+};
+
+clearBtn.onclick=()=>{selected.clear();updateBar();render();};
+closeBtn.onclick=()=>modal.classList.remove('show');
+modal.onclick=e=>{if(e.target===modal)modal.classList.remove('show');};
+document.addEventListener('keydown',e=>{if(e.key==="Escape")modal.classList.remove('show');});
+searchEl.oninput=render;
+sortEl.onchange=render;
+
+/* ---- load products ---- */
+async function load(){
+  if(DEMO){
+    document.getElementById('demobanner').classList.add('show');
+    PRODUCTS=SAMPLE_PRODUCTS;
+  } else {
+    trackVisit();
+    try{
+      const snap=await db.collection('products').orderBy('createdAt','asc').get();
+      PRODUCTS=snap.docs.map(d=>({id:d.id,...d.data()}));
+      if(!PRODUCTS.length){
+        grid.innerHTML='<div class="empty"><div class="big">Nothing here yet ✍️</div>Add your first products from the dashboard.</div>';
+      }
+    }catch(err){
+      console.error(err);
+      PRODUCTS=SAMPLE_PRODUCTS;
+      document.getElementById('demobanner').classList.add('show');
+    }
+  }
+  buildChips(); render();
+}
+load();
+</script>
+</body>
+</html>

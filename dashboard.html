@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Piling-Pili — Dashboard</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Karla:wght@400;500;700&family=Caveat:wght@600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#17253B; --ink-soft:#4A5A72; --paper:#FFFFFF; --wash:#F3F5F8;
+  --tag-red:#E63946; --verdict-green:#1F7A5A; --kraft:#EFE6D4; --kraft-line:#D9CBAE;
+  --line:#DDE3EB; --amber:#B7791F; --amber-bg:#FCF3E3;
+  --font-display:'Bricolage Grotesque',sans-serif; --font-body:'Karla',sans-serif; --font-note:'Caveat',cursive;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-body);color:var(--ink);background:var(--wash);line-height:1.5;min-height:100vh}
+button{font-family:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--tag-red);outline-offset:2px}
+header{background:var(--paper);border-bottom:2px solid var(--ink);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{font-family:var(--font-display);font-weight:800;font-size:1.2rem;display:flex;align-items:center;gap:10px}
+.brand .tagdot{width:13px;height:13px;background:var(--tag-red);border-radius:50%;border:2px solid var(--ink)}
+.brand small{font-weight:400;color:var(--ink-soft);font-size:.78rem}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{border:1.5px solid var(--ink);background:var(--paper);border-radius:999px;padding:8px 18px;font-weight:700;font-size:.88rem}
+.tab[aria-selected="true"]{background:var(--ink);color:#fff}
+main{max-width:1080px;margin:0 auto;padding:24px 20px 80px}
+.pane{display:none}.pane.active{display:block}
+h2{font-family:var(--font-display);font-weight:800;letter-spacing:-.02em;margin-bottom:4px}
+.sub{color:var(--ink-soft);font-size:.9rem;margin-bottom:18px}
+/* overview cards */
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:26px}
+.stat{background:var(--paper);border:2px solid var(--ink);border-radius:10px;padding:16px}
+.stat .n{font-family:var(--font-display);font-weight:800;font-size:1.7rem;line-height:1.1}
+.stat .l{font-size:.76rem;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-soft);font-weight:700;margin-top:2px}
+.stat.money .n{color:var(--verdict-green)}
+/* alerts */
+.alert{background:var(--amber-bg);border:2px solid var(--amber);border-radius:10px;padding:14px 16px;margin-bottom:10px;font-size:.92rem}
+.alert b{color:var(--amber)}
+.alert .why{color:var(--ink-soft);font-size:.84rem;margin-top:2px}
+.allgood{background:var(--paper);border:2px dashed var(--verdict-green);border-radius:10px;padding:16px;color:var(--verdict-green);font-family:var(--font-note);font-size:1.3rem}
+/* table */
+.tablewrap{overflow-x:auto;background:var(--paper);border:2px solid var(--ink);border-radius:10px}
+table{width:100%;border-collapse:collapse;font-size:.88rem}
+th,td{padding:11px 13px;text-align:left;border-bottom:1.5px solid var(--line);white-space:nowrap}
+th{background:var(--wash);font-size:.74rem;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);cursor:default}
+tr:last-child td{border-bottom:none}
+td.name{white-space:normal;min-width:180px;font-weight:700}
+.badge{display:inline-block;font-size:.7rem;font-weight:700;padding:2px 9px;border-radius:999px;margin-left:6px;vertical-align:middle}
+.badge.warn{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber)}
+.badge.top{background:#E8F5EF;color:var(--verdict-green);border:1px solid var(--verdict-green)}
+/* products */
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.btn{background:var(--ink);color:#fff;border:none;border-radius:8px;font-weight:700;padding:11px 20px;font-size:.92rem}
+.btn.red{background:var(--tag-red)}
+.btn.ghost{background:var(--paper);color:var(--ink);border:2px solid var(--ink)}
+.btn.small{padding:6px 12px;font-size:.8rem}
+.plist{display:grid;gap:12px}
+.prow{background:var(--paper);border:2px solid var(--ink);border-radius:10px;padding:14px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.prow .emoji{font-size:1.7rem}
+.prow .info{flex:1;min-width:200px}
+.prow .info .nm{font-weight:700}
+.prow .info .meta{font-size:.8rem;color:var(--ink-soft)}
+.prow .acts{display:flex;gap:8px;flex-wrap:wrap}
+/* form */
+.formcard{background:var(--paper);border:2px solid var(--ink);border-radius:12px;padding:20px;margin-bottom:20px;display:none}
+.formcard.show{display:block}
+.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.formgrid .full{grid-column:1/-1}
+label{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);display:block;margin-bottom:4px}
+input,textarea,select{width:100%;padding:10px 12px;border:1.5px solid var(--ink);border-radius:8px;font-family:inherit;font-size:.95rem;background:var(--paper);color:var(--ink)}
+textarea{resize:vertical;min-height:64px}
+.hint{font-size:.76rem;color:var(--ink-soft);margin-top:3px}
+.formacts{display:flex;gap:10px;margin-top:16px}
+/* login */
+.gate{position:fixed;inset:0;background:var(--wash);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+.gatebox{background:var(--paper);border:2px solid var(--ink);border-radius:14px;padding:30px;max-width:360px;width:100%;text-align:center}
+.gatebox h1{font-family:var(--font-display);font-weight:800;font-size:1.4rem;margin-bottom:6px}
+.gatebox p{color:var(--ink-soft);font-size:.88rem;margin-bottom:16px}
+.gatebox input{text-align:center;margin-bottom:12px}
+.setupnote{background:var(--kraft);border:1.5px dashed var(--kraft-line);border-radius:10px;padding:14px 16px;font-size:.88rem;margin-bottom:20px;display:none}
+.setupnote.show{display:block}
+@media(max-width:640px){.formgrid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="gate" id="gate">
+  <div class="gatebox">
+    <h1>Piling-Pili Dashboard</h1>
+    <p>Enter your passcode to continue.</p>
+    <input type="password" id="pass" placeholder="Passcode" aria-label="Passcode">
+    <button class="btn" id="passbtn" style="width:100%">Enter</button>
+  </div>
+</div>
+
+<header>
+  <div class="brand"><span class="tagdot"></span>Piling-Pili <small>· Dashboard</small></div>
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-pane="overview">Overview</button>
+    <button class="tab" role="tab" aria-selected="false" data-pane="products">Products</button>
+    <button class="tab" role="tab" aria-selected="false" data-pane="stats">Stats</button>
+  </nav>
+</header>
+
+<main>
+<div class="setupnote" id="setupnote">
+  ⚙️ <b>Firebase not connected yet.</b> Open this file and paste your Firebase config at the top of the script (same config as index.html). Until then the dashboard can't load or save anything.
+</div>
+
+<!-- ================= OVERVIEW ================= -->
+<section class="pane active" id="pane-overview">
+  <h2>Overview</h2>
+  <p class="sub">Your whole affiliate operation, at a glance.</p>
+  <div class="statgrid">
+    <div class="stat"><div class="n" id="ov-visits">–</div><div class="l">Site visits</div></div>
+    <div class="stat"><div class="n" id="ov-views">–</div><div class="l">Product views</div></div>
+    <div class="stat"><div class="n" id="ov-clicks">–</div><div class="l">Shopee clicks</div></div>
+    <div class="stat"><div class="n" id="ov-compares">–</div><div class="l">Compares</div></div>
+    <div class="stat money"><div class="n" id="ov-earn">–</div><div class="l">Logged earnings</div></div>
+  </div>
+  <h2 style="font-size:1.15rem">⚠️ Link alerts</h2>
+  <p class="sub">Products getting clicks but with no earnings logged recently — a sign the link may be dead, the item is out of stock, or attribution broke. Verify against your Shopee affiliate earnings page.</p>
+  <div id="alerts"></div>
+  <h2 style="font-size:1.15rem;margin-top:26px">🏆 Top products by clicks</h2>
+  <div class="tablewrap" style="margin-top:10px">
+    <table><thead><tr><th>Product</th><th>Clicks</th><th>Views</th><th>CTR</th></tr></thead>
+    <tbody id="topbody"></tbody></table>
+  </div>
+</section>
+
+<!-- ================= PRODUCTS ================= -->
+<section class="pane" id="pane-products">
+  <div class="toolbar">
+    <div><h2>Products</h2><p class="sub" style="margin:0">Add, edit, or remove what's live on your site.</p></div>
+    <button class="btn red" id="addbtn">+ Add product</button>
+  </div>
+
+  <div class="formcard" id="formcard">
+    <h2 style="font-size:1.1rem;margin-bottom:14px" id="formtitle">Add product</h2>
+    <div class="formgrid">
+      <div class="full"><label for="f-name">Product name</label><input id="f-name" placeholder="e.g. Digital Air Fryer 4.5L"></div>
+      <div><label for="f-category">Category</label><input id="f-category" list="catlist" placeholder="e.g. Kitchen"><datalist id="catlist"></datalist></div>
+      <div><label for="f-price">Price (numbers only)</label><input id="f-price" type="number" placeholder="1699"></div>
+      <div><label for="f-emoji">Emoji (placeholder image)</label><input id="f-emoji" placeholder="🍟" maxlength="4"></div>
+      <div><label for="f-image">Image URL (optional, overrides emoji)</label><input id="f-image" placeholder="https://..."></div>
+      <div class="full"><label for="f-link">Shopee affiliate link ⚠️</label><input id="f-link" placeholder="https://s.shopee.ph/xxxx">
+        <p class="hint">Generate in Shopee app → Affiliate dashboard → paste here. Double-check before saving!</p></div>
+      <div><label for="f-pros">Pros (one per line)</label><textarea id="f-pros" placeholder="Fits a whole chicken&#10;Auto shut-off"></textarea></div>
+      <div><label for="f-cons">Cons (one per line — required, keep it honest!)</label><textarea id="f-cons" placeholder="Big footprint on the counter"></textarea></div>
+      <div class="full"><label for="f-verdict">Real-talk verdict (one sentence, like advice to a friend)</label><textarea id="f-verdict" placeholder="Worth it if you fry 3+ times a week."></textarea></div>
+    </div>
+    <div class="formacts">
+      <button class="btn" id="savebtn">Save product</button>
+      <button class="btn ghost" id="cancelbtn">Cancel</button>
+    </div>
+  </div>
+
+  <div class="plist" id="plist"></div>
+</section>
+
+<!-- ================= STATS ================= -->
+<section class="pane" id="pane-stats">
+  <h2>Stats & earnings</h2>
+  <p class="sub">Clicks and views are tracked automatically. Earnings you log manually: check your Shopee affiliate earnings page, then hit “Log ₱” on the matching product.</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Product</th><th>Views</th><th>Clicks</th><th>CTR</th><th>Compares</th><th>Last click</th><th>Earnings</th><th>Last earning</th><th></th></tr></thead>
+      <tbody id="statsbody"></tbody>
+    </table>
+  </div>
+</section>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+/* ============================================================
+   ⚙️ SETUP
+   1. PASSCODE — change this! It gates the dashboard UI.
+      (Light protection only: keep this file's URL private,
+      and see the Firestore rules note in our chat.)
+   2. firebaseConfig — paste the SAME config as index.html.
+   3. Alert tuning — a product is flagged when it has at least
+      ALERT_MIN_CLICKS clicks AND no earning logged in the
+      last ALERT_DAYS days (or never).
+   ============================================================ */
+const PASSCODE = "change-me-2026";
+const ALERT_MIN_CLICKS = 15;
+const ALERT_DAYS = 14;
+
+const firebaseConfig = {
+  apiKey: "PASTE-YOUR-API-KEY",
+  authDomain: "PASTE.firebaseapp.com",
+  projectId: "PASTE-PROJECT-ID",
+  storageBucket: "PASTE.appspot.com",
+  messagingSenderId: "PASTE",
+  appId: "PASTE"
+};
+
+/* ================= app code below ================= */
+const DEMO = firebaseConfig.apiKey === "PASTE-YOUR-API-KEY";
+let db=null;
+if(!DEMO){ firebase.initializeApp(firebaseConfig); db=firebase.firestore(); }
+else document.getElementById('setupnote').classList.add('show');
+
+let PRODUCTS=[], SITE={visits:0}, editingId=null;
+const $=id=>document.getElementById(id);
+const peso=n=>"₱"+Number(n||0).toLocaleString('en-PH');
+
+/* ---- passcode gate ---- */
+if(sessionStorage.getItem('pp-auth')==='1') $('gate').style.display='none';
+$('passbtn').onclick=tryPass;
+$('pass').addEventListener('keydown',e=>{if(e.key==='Enter')tryPass();});
+function tryPass(){
+  if($('pass').value===PASSCODE){ sessionStorage.setItem('pp-auth','1'); $('gate').style.display='none'; }
+  else { $('pass').value=''; $('pass').placeholder='Wrong passcode — try again'; }
+}
+
+/* ---- tabs ---- */
+document.querySelectorAll('.tab').forEach(t=>{
+  t.onclick=()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected',x===t));
+    document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));
+    $('pane-'+t.dataset.pane).classList.add('active');
+  };
+});
+
+/* ---- helpers ---- */
+function tsToDate(ts){ return ts && ts.toDate ? ts.toDate() : null; }
+function ago(d){
+  if(!d) return "never";
+  const days=Math.floor((Date.now()-d.getTime())/86400000);
+  if(days===0) return "today";
+  if(days===1) return "yesterday";
+  return days+" days ago";
+}
+function ctr(p){ return p.views ? Math.round((p.clicks||0)/p.views*100)+"%" : "–"; }
+function needsAlert(p){
+  if((p.clicks||0) < ALERT_MIN_CLICKS) return false;
+  const le=tsToDate(p.lastEarningAt);
+  if(!le) return true;
+  return (Date.now()-le.getTime())/86400000 > ALERT_DAYS;
+}
+function linkLooksBroken(p){ return !p.link || !p.link.startsWith("http") || p.link.includes("REPLACE"); }
+
+/* ---- load everything ---- */
+async function load(){
+  if(DEMO) return;
+  const [psnap, msnap] = await Promise.all([
+    db.collection('products').orderBy('createdAt','asc').get(),
+    db.collection('meta').doc('site').get()
+  ]);
+  PRODUCTS = psnap.docs.map(d=>({id:d.id,...d.data()}));
+  SITE = msnap.exists ? msnap.data() : {visits:0};
+  renderAll();
+}
+
+function renderAll(){ renderOverview(); renderProducts(); renderStats(); }
+
+/* ---- overview ---- */
+function renderOverview(){
+  const sum=f=>PRODUCTS.reduce((a,p)=>a+(p[f]||0),0);
+  $('ov-visits').textContent=(SITE.visits||0).toLocaleString();
+  $('ov-views').textContent=sum('views').toLocaleString();
+  $('ov-clicks').textContent=sum('clicks').toLocaleString();
+  $('ov-compares').textContent=sum('compares').toLocaleString();
+  $('ov-earn').textContent=peso(sum('totalEarnings'));
+
+  const alerts=PRODUCTS.filter(p=>needsAlert(p)||linkLooksBroken(p));
+  $('alerts').innerHTML = alerts.length
+    ? alerts.map(p=>{
+        const broken=linkLooksBroken(p);
+        return '<div class="alert"><b>'+p.name+'</b> — '+
+          (broken
+            ? 'link looks invalid or is still a placeholder. Fix it in Products.'
+            : (p.clicks||0)+' clicks, but no earnings logged '+(p.lastEarningAt?'in the last '+ALERT_DAYS+' days':'ever')+'.')+
+          '<div class="why">'+(broken?'':'Check on Shopee: is the product still in stock? Does the link still open? If earnings did come in, log them in Stats to clear this alert.')+'</div></div>';
+      }).join('')
+    : '<div class="allgood">All clear — no suspicious links right now ✓</div>';
+
+  const top=[...PRODUCTS].sort((a,b)=>(b.clicks||0)-(a.clicks||0)).slice(0,5);
+  $('topbody').innerHTML = top.length
+    ? top.map((p,i)=>'<tr><td class="name">'+p.name+(i===0&&(p.clicks||0)>0?'<span class="badge top">TOP</span>':'')+'</td><td>'+(p.clicks||0)+'</td><td>'+(p.views||0)+'</td><td>'+ctr(p)+'</td></tr>').join('')
+    : '<tr><td colspan="4" style="color:var(--ink-soft)">No products yet — add some in the Products tab.</td></tr>';
+}
+
+/* ---- products CRUD ---- */
+function renderProducts(){
+  $('catlist').innerHTML=[...new Set(PRODUCTS.map(p=>p.category))].map(c=>'<option value="'+c+'">').join('');
+  $('plist').innerHTML = PRODUCTS.length
+    ? PRODUCTS.map(p=>'<div class="prow"><span class="emoji">'+(p.emoji||"🛍️")+'</span>'+
+        '<div class="info"><div class="nm">'+p.name+(linkLooksBroken(p)?'<span class="badge warn">CHECK LINK</span>':'')+'</div>'+
+        '<div class="meta">'+p.category+' · '+peso(p.price)+' · '+(p.clicks||0)+' clicks</div></div>'+
+        '<div class="acts"><button class="btn ghost small" onclick="editP(\''+p.id+'\')">Edit</button>'+
+        '<button class="btn ghost small" onclick="delP(\''+p.id+'\')" style="color:var(--tag-red);border-color:var(--tag-red)">Delete</button></div></div>').join('')
+    : '<p style="color:var(--ink-soft)">No products yet. Hit “+ Add product” to start.</p>';
+}
+
+$('addbtn').onclick=()=>{ editingId=null; $('formtitle').textContent="Add product"; clearForm(); $('formcard').classList.add('show'); $('f-name').focus(); };
+$('cancelbtn').onclick=()=>$('formcard').classList.remove('show');
+
+function clearForm(){ ["f-name","f-category","f-price","f-emoji","f-image","f-link","f-pros","f-cons","f-verdict"].forEach(id=>$(id).value=""); }
+
+window.editP=id=>{
+  const p=PRODUCTS.find(x=>x.id===id); if(!p) return;
+  editingId=id; $('formtitle').textContent="Edit product";
+  $('f-name').value=p.name||""; $('f-category').value=p.category||""; $('f-price').value=p.price||"";
+  $('f-emoji').value=p.emoji||""; $('f-image').value=p.image||""; $('f-link').value=p.link||"";
+  $('f-pros').value=(p.pros||[]).join("\n"); $('f-cons').value=(p.cons||[]).join("\n"); $('f-verdict').value=p.verdict||"";
+  $('formcard').classList.add('show'); $('f-name').focus();
+};
+
+window.delP=async id=>{
+  const p=PRODUCTS.find(x=>x.id===id);
+  if(!confirm('Delete "'+p.name+'"? Its stats will be deleted too.')) return;
+  await db.collection('products').doc(id).delete();
+  load();
+};
+
+$('savebtn').onclick=async()=>{
+  const lines=v=>v.split("\n").map(s=>s.trim()).filter(Boolean);
+  const data={
+    name:$('f-name').value.trim(),
+    category:$('f-category').value.trim()||"Uncategorized",
+    price:Number($('f-price').value)||0,
+    emoji:$('f-emoji').value.trim(),
+    image:$('f-image').value.trim(),
+    link:$('f-link').value.trim(),
+    pros:lines($('f-pros').value),
+    cons:lines($('f-cons').value),
+    verdict:$('f-verdict').value.trim()
+  };
+  if(!data.name){alert("Product name is required.");return;}
+  if(!data.link.startsWith("http")){alert("The affiliate link doesn't look valid — it should start with https://");return;}
+  if(!data.cons.length){alert("Add at least one con. Honest reviews are the whole point! 😄");return;}
+  if(editingId){
+    await db.collection('products').doc(editingId).update(data);
+  } else {
+    await db.collection('products').add({...data,views:0,clicks:0,compares:0,totalEarnings:0,
+      createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+  }
+  $('formcard').classList.remove('show');
+  load();
+};
+
+/* ---- stats + earnings log ---- */
+function renderStats(){
+  $('statsbody').innerHTML = PRODUCTS.length
+    ? PRODUCTS.map(p=>'<tr><td class="name">'+p.name+(needsAlert(p)?'<span class="badge warn">⚠ CHECK</span>':'')+'</td>'+
+        '<td>'+(p.views||0)+'</td><td>'+(p.clicks||0)+'</td><td>'+ctr(p)+'</td><td>'+(p.compares||0)+'</td>'+
+        '<td>'+ago(tsToDate(p.lastClickAt))+'</td><td>'+peso(p.totalEarnings)+'</td><td>'+ago(tsToDate(p.lastEarningAt))+'</td>'+
+        '<td><button class="btn small" onclick="logEarn(\''+p.id+'\')">Log ₱</button></td></tr>').join('')
+    : '<tr><td colspan="9" style="color:var(--ink-soft)">No products yet.</td></tr>';
+}
+
+window.logEarn=async id=>{
+  const p=PRODUCTS.find(x=>x.id===id);
+  const v=prompt('Commission earned from "'+p.name+'" (from your Shopee affiliate earnings page). Amount in ₱:');
+  if(v===null) return;
+  const amt=Number(v);
+  if(isNaN(amt)||amt<0){alert("Please enter a valid number.");return;}
+  await db.collection('products').doc(id).update({
+    totalEarnings:firebase.firestore.FieldValue.increment(amt),
+    lastEarningAt:firebase.firestore.FieldValue.serverTimestamp()
+  });
+  load();
+};
+
+load();
+</script>
+</body>
+</html>
